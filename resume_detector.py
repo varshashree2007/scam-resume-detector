@@ -1,4 +1,5 @@
 import PyPDF2
+import re
 
 def extract_text(file):
     reader = PyPDF2.PdfReader(file)
@@ -10,25 +11,51 @@ def extract_text(file):
 
 
 def analyze_resume(text):
-    red_flags = [
+    score = 0
+    flags = []
+
+    text_lower = text.lower()
+
+    # 🔹 Skills detection
+    skills = ["python", "java", "machine learning", "data analysis", "sql"]
+    found_skills = [skill for skill in skills if skill in text_lower]
+
+    if found_skills:
+        score += len(found_skills) * 10
+    else:
+        flags.append("No relevant technical skills found")
+
+    # 🔹 Suspicious phrases
+    suspicious = [
         "expert in everything",
         "guaranteed results",
         "100% success",
-        "worked in all technologies",
-        "10 years experience"
+        "worked in all technologies"
     ]
 
-    flags = []
+    for phrase in suspicious:
+        if phrase in text_lower:
+            flags.append(f"Suspicious claim: {phrase}")
+            score -= 15
 
-    for phrase in red_flags:
-        if phrase.lower() in text.lower():
-            flags.append(f"Suspicious phrase found: {phrase}")
+    # 🔹 Length check
+    if len(text) < 300:
+        flags.append("Resume content too short")
+        score -= 10
 
-    if len(text) < 100:
-        flags.append("Resume content is too short")
-
-    if flags:
-        return "⚠ Suspicious Resume", flags
+    # 🔹 Email check
+    if not re.search(r"\S+@\S+\.\S+", text):
+        flags.append("Email not found")
+        score -= 10
     else:
-        return "✅ Genuine Resume", []
-    
+        score += 10
+
+    # 🔹 Final result
+    if score >= 30:
+        result = "✅ Strong Resume"
+    elif score >= 10:
+        result = "⚠ Average Resume"
+    else:
+        result = "🚨 Weak / Suspicious Resume"
+
+    return result, score, flags
