@@ -1,7 +1,7 @@
 import streamlit as st
 import pickle
-import numpy as np
 from resume_detector import analyze_resume
+import pdfplumber
 
 # Load model
 model = pickle.load(open("model.pkl", "rb"))
@@ -10,80 +10,123 @@ vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 # Page config
 st.set_page_config(page_title="AI Detector", layout="wide")
 
-# Sidebar Navigation
+# Custom CSS
+st.markdown("""
+<style>
+body {
+    background-color: #0e1117;
+}
+.big-title {
+    font-size: 42px;
+    font-weight: bold;
+    color: #4CAF50;
+}
+.card {
+    padding: 20px;
+    border-radius: 12px;
+    background-color: #1c1f26;
+    margin-bottom: 20px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# Sidebar
 st.sidebar.title("🛡 AI Detector")
-page = st.sidebar.radio("Go to", ["🏠 Home", "📩 Scam Detector", "📄 Resume Analyzer", "ℹ About"])
+page = st.sidebar.radio("Navigate", ["Home", "Scam Detector", "Resume Analyzer", "About"])
 
 # ---------------- HOME ----------------
-if page == "🏠 Home":
-    st.title("🛡 AI Scam & Resume Detector")
+if page == "Home":
+    st.markdown('<div class="big-title">🛡 AI Scam & Resume Detector</div>', unsafe_allow_html=True)
+
     st.markdown("""
-    ### 🚀 Welcome!
-    This application helps you:
+    ### 🚀 Protect Yourself Online
     
-    ✅ Detect scam messages  
-    ✅ Analyze resumes for suspicious content  
+    This AI-powered tool helps you:
     
-    Built using Machine Learning + Streamlit
+    - 📩 Detect scam messages instantly  
+    - 📄 Analyze resumes for suspicious content  
+    - 🤖 Use machine learning for safety
+    
+    ---
     """)
 
+    st.success("👉 Use the sidebar to explore features")
+
 # ---------------- SCAM DETECTOR ----------------
-elif page == "📩 Scam Detector":
-    st.title("📩 Scam Message Detection")
+elif page == "Scam Detector":
+    st.markdown('<div class="big-title">📩 Scam Message Detection</div>', unsafe_allow_html=True)
 
-    message = st.text_area("Enter your message")
+    with st.container():
+        st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    if st.button("Predict"):
-        if message:
-            data = vectorizer.transform([message])
-            prediction = model.predict(data)[0]
-            prob = model.predict_proba(data)[0]
+        message = st.text_area("Enter your message")
 
-            if prediction == 1:
-                st.error(f"🚨 Spam Detected! (Confidence: {max(prob)*100:.2f}%)")
+        if st.button("Analyze Message"):
+            if message:
+                data = vectorizer.transform([message])
+                prediction = model.predict(data)[0]
+                prob = model.predict_proba(data)[0]
+
+                confidence = int(max(prob) * 100)
+
+                if prediction == 1:
+                    st.error("🚨 Spam Detected!")
+                    st.progress(confidence)
+                    st.write(f"Confidence: {confidence}%")
+                else:
+                    st.success("✅ Safe Message")
+                    st.progress(confidence)
+                    st.write(f"Confidence: {confidence}%")
             else:
-                st.success(f"✅ Safe Message (Confidence: {max(prob)*100:.2f}%)")
-        else:
-            st.warning("Please enter a message")
+                st.warning("Please enter a message")
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- RESUME ANALYZER ----------------
-elif page == "📄 Resume Analyzer":
-    st.title("📄 Resume Analyzer")
+elif page == "Resume Analyzer":
+    st.markdown('<div class="big-title">📄 Resume Analyzer</div>', unsafe_allow_html=True)
 
-    uploaded_file = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
+    with st.container():
+        st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    if uploaded_file:
-        import pdfplumber
-        text = ""
-        with pdfplumber.open(uploaded_file) as pdf:
-            for page in pdf.pages:
-                text += page.extract_text()
+        uploaded_file = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
 
-        result, flags = analyze_resume(text)
+        if uploaded_file:
+            text = ""
+            with pdfplumber.open(uploaded_file) as pdf:
+                for page in pdf.pages:
+                    text += page.extract_text()
 
-        if "Suspicious" in result:
-            st.error(result)
-            st.write("⚠ Issues found:")
-            for f in flags:
-                st.write("- ", f)
-        else:
-            st.success(result)
+            result, flags = analyze_resume(text)
+
+            if "Suspicious" in result:
+                st.error(result)
+                for f in flags:
+                    st.write("⚠", f)
+            else:
+                st.success(result)
+
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------- ABOUT ----------------
-elif page == "ℹ About":
-    st.title("ℹ About Project")
+elif page == "About":
+    st.markdown('<div class="big-title">ℹ About</div>', unsafe_allow_html=True)
+
     st.markdown("""
-    ### 👩‍💻 Project Details
+    ### 👩‍💻 Project Info
     
-    This project detects:
-    - Scam messages using ML model
-    - Fake or suspicious resumes using keyword analysis
+    This project uses Machine Learning to:
+    - Detect scam messages
+    - Identify suspicious resumes
     
-    ### 🛠 Tech Used
+    ### 🛠 Tech Stack
     - Python
     - Scikit-learn
     - Streamlit
     
-    ### 🎯 Purpose
-    To improve awareness about online scams and fake resumes.
+    ---
     """)
+    
+# Footer
+st.markdown("---")
+st.markdown("👩‍💻 Built by Varsha Shree | AI Project 🚀")
