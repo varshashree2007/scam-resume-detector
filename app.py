@@ -10,14 +10,18 @@ vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 # Page config
 st.set_page_config(page_title="AI Detector", layout="wide")
 
+# ---------------- FINAL UI TITLE ----------------
+st.markdown("""
+<h1 style='text-align: center; color: #4CAF50;'>
+🛡 AI Scam & Resume Detector
+</h1>
+""", unsafe_allow_html=True)
+
 # ---------------- CSS ----------------
 st.markdown("""
 <style>
-body {
-    background-color: #0e1117;
-}
 .big-title {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: bold;
     color: #4CAF50;
 }
@@ -34,13 +38,11 @@ body {
 st.sidebar.title("🛡 AI Detector")
 page = st.sidebar.radio("Navigate", ["Home", "Scam Detector", "Resume Analyzer", "About"])
 
-# ---------------- HEADER ----------------
-st.markdown("## 🛡 AI Security Dashboard")
 st.markdown("---")
 
 # ---------------- HOME ----------------
 if page == "Home":
-    st.markdown('<div class="big-title">AI Scam & Resume Detector</div>', unsafe_allow_html=True)
+    st.markdown('<div class="big-title">Welcome</div>', unsafe_allow_html=True)
 
     st.markdown("""
     ### 🚀 Protect Yourself Online
@@ -138,8 +140,6 @@ elif page == "About":
     - Scikit-learn  
     - Streamlit  
     - NLP  
-    
-    ---
     """)
 
 # ---------------- FOOTER ----------------
