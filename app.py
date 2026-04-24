@@ -1,141 +1,89 @@
 import streamlit as st
 import pickle
-import PyPDF2
+import numpy as np
+from resume_detector import analyze_resume
 
-# ---------------- LOAD MODEL ----------------
+# Load model
 model = pickle.load(open("model.pkl", "rb"))
 vectorizer = pickle.load(open("vectorizer.pkl", "rb"))
 
+# Page config
 st.set_page_config(page_title="AI Detector", layout="wide")
 
-# ---------------- SIDEBAR NAVIGATION ----------------
-st.sidebar.title("🛡️ AI Detector")
-page = st.sidebar.radio(
-    "Navigation",
-    ["🏠 Home", "📩 Scam Detector", "📄 Resume Analyzer", "ℹ️ About"]
-)
+# Sidebar Navigation
+st.sidebar.title("🛡 AI Detector")
+page = st.sidebar.radio("Go to", ["🏠 Home", "📩 Scam Detector", "📄 Resume Analyzer", "ℹ About"])
 
-st.sidebar.markdown("---")
-st.sidebar.write("Built using Machine Learning")
-
-# =====================================================
-# 🏠 HOME PAGE
-# =====================================================
+# ---------------- HOME ----------------
 if page == "🏠 Home":
-    st.title("🛡️ AI Scam & Resume Detector")
-
+    st.title("🛡 AI Scam & Resume Detector")
     st.markdown("""
-    Welcome to the **AI-based Scam Detection and Resume Analyzer**.
-
-    ### 🔍 Features:
-    - Detect scam messages using Machine Learning
-    - Analyze resumes and provide score
-    - Simple and interactive interface
-
-    ### 🚀 Technologies Used:
-    - Python
-    - Streamlit
-    - Scikit-learn
+    ### 🚀 Welcome!
+    This application helps you:
+    
+    ✅ Detect scam messages  
+    ✅ Analyze resumes for suspicious content  
+    
+    Built using Machine Learning + Streamlit
     """)
 
-# =====================================================
-# 📩 SCAM DETECTOR PAGE
-# =====================================================
+# ---------------- SCAM DETECTOR ----------------
 elif page == "📩 Scam Detector":
     st.title("📩 Scam Message Detection")
 
-    msg = st.text_area("Enter your message here")
+    message = st.text_area("Enter your message")
 
-    if st.button("Predict Scam"):
-        if msg.strip():
-            vec = vectorizer.transform([msg])
-
-            prediction = model.predict(vec)[0]
-            prob = model.predict_proba(vec)[0][prediction]
+    if st.button("Predict"):
+        if message:
+            data = vectorizer.transform([message])
+            prediction = model.predict(data)[0]
+            prob = model.predict_proba(data)[0]
 
             if prediction == 1:
-                st.error(f"⚠️ Scam Message Detected ({prob*100:.2f}% confidence)")
+                st.error(f"🚨 Spam Detected! (Confidence: {max(prob)*100:.2f}%)")
             else:
-                st.success(f"✅ Safe Message ({prob*100:.2f}% confidence)")
+                st.success(f"✅ Safe Message (Confidence: {max(prob)*100:.2f}%)")
         else:
             st.warning("Please enter a message")
 
-# =====================================================
-# 📄 RESUME ANALYZER PAGE
-# =====================================================
+# ---------------- RESUME ANALYZER ----------------
 elif page == "📄 Resume Analyzer":
     st.title("📄 Resume Analyzer")
 
-    file = st.file_uploader("Upload Resume (PDF only)")
+    uploaded_file = st.file_uploader("Upload Resume (PDF only)", type=["pdf"])
 
-    def resume_score(text):
-        score = 0
-
-        skills = [
-            "python", "java", "c++", "sql",
-            "machine learning", "data science",
-            "flask", "streamlit", "html", "css"
-        ]
-
-        text_lower = text.lower()
-
-        for skill in skills:
-            if skill in text_lower:
-                score += 10
-
-        if "experience" in text_lower:
-            score += 10
-
-        if "education" in text_lower or "college" in text_lower:
-            score += 10
-
-        return min(score, 100)
-
-    if file is not None:
-        reader = PyPDF2.PdfReader(file)
+    if uploaded_file:
+        import pdfplumber
         text = ""
+        with pdfplumber.open(uploaded_file) as pdf:
+            for page in pdf.pages:
+                text += page.extract_text()
 
-        for page_pdf in reader.pages:
-            text += page_pdf.extract_text() or ""
+        result, flags = analyze_resume(text)
 
-        st.subheader("📄 Resume Preview")
-        st.write(text[:800])
+        if "Suspicious" in result:
+            st.error(result)
+            st.write("⚠ Issues found:")
+            for f in flags:
+                st.write("- ", f)
+        else:
+            st.success(result)
 
-        if st.button("Analyze Resume"):
-            score = resume_score(text)
-
-            st.subheader(f"📊 Resume Score: {score}/100")
-
-            if score > 70:
-                st.success("✅ Strong Resume")
-            elif score > 40:
-                st.warning("⚠️ Average Resume")
-            else:
-                st.error("❌ Weak Resume")
-
-            st.info("💡 Tip: Add skills, projects, and experience to improve score")
-
-# =====================================================
-# ℹ️ ABOUT PAGE
-# =====================================================
-elif page == "ℹ️ About":
-    st.title("ℹ️ About This Project")
-
+# ---------------- ABOUT ----------------
+elif page == "ℹ About":
+    st.title("ℹ About Project")
     st.markdown("""
-    This project is an **AI-based web application** developed using **Machine Learning and Streamlit**.
-
-    ### 🎯 Objective:
-    - Detect scam messages using NLP techniques
-    - Analyze resumes and provide feedback
-
-    ### 🧠 Model Used:
-    - TF-IDF Vectorizer
-    - Logistic Regression
-
-    ### 👩‍💻 Developed By:
-    - Your Name
-
-    ### 📌 Use Cases:
-    - Cyber safety awareness
-    - Resume screening
+    ### 👩‍💻 Project Details
+    
+    This project detects:
+    - Scam messages using ML model
+    - Fake or suspicious resumes using keyword analysis
+    
+    ### 🛠 Tech Used
+    - Python
+    - Scikit-learn
+    - Streamlit
+    
+    ### 🎯 Purpose
+    To improve awareness about online scams and fake resumes.
     """)

@@ -9,7 +9,7 @@ def extract_text(file):
     return text
 
 
-def detect_fake_resume(text):
+def analyze_resume(text):
     red_flags = [
         "expert in everything",
         "guaranteed results",
@@ -18,9 +18,17 @@ def detect_fake_resume(text):
         "10 years experience"
     ]
 
-    found_flags = [flag for flag in red_flags if flag in text.lower()]
+    flags = []
 
-    if found_flags:
-        return "⚠ Suspicious Resume", found_flags
+    for phrase in red_flags:
+        if phrase.lower() in text.lower():
+            flags.append(f"Suspicious phrase found: {phrase}")
+
+    if len(text) < 100:
+        flags.append("Resume content is too short")
+
+    if flags:
+        return "⚠ Suspicious Resume", flags
     else:
-        return "✅ Looks Genuine", []
+        return "✅ Genuine Resume", []
+    
